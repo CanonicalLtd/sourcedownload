@@ -22,6 +22,11 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+// ListResponse is the response from fetching the snaps list
+type ListResponse struct {
+	Snaps []Snap `json:"snaps"`
+}
+
 // SnapResponse is the response from fetching a snap revision
 type SnapResponse struct {
 	Snap Snap `json:"snap"`

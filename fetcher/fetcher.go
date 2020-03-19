@@ -24,12 +24,15 @@ import (
 	url2 "net/url"
 	"os"
 	"path"
+	"sort"
+	"strconv"
 	"strings"
 )
 
 // FetchService is the interface to fetch the packages
 type FetchService interface {
 	Run(snap string, revision int) error
+	List() ([]Snap, error)
 }
 
 // Fetcher implements the fetch service
@@ -76,6 +79,56 @@ func (f Fetcher) Run(snap string, revision int) error {
 	}
 
 	return nil
+}
+
+// List the snaps and revisions available
+func (f Fetcher) List() error {
+	ll, err := f.snapList()
+	if err != nil {
+		return err
+	}
+
+	// Sort the data: arch, name, revision (desc)
+	sort.Slice(ll, func(i, j int) bool {
+		if ll[i].Arch != ll[j].Arch {
+			return ll[i].Arch < ll[j].Arch
+		}
+		if ll[i].Name != ll[j].Name {
+			return ll[i].Name < ll[j].Name
+		}
+		a, _ := strconv.Atoi(ll[i].Revision)
+		b, _ := strconv.Atoi(ll[j].Revision)
+		return b < a
+	})
+
+	fmt.Printf("%s\t%s\t%s\n", "Arch", "Name", "Revision")
+	for _, s := range ll {
+		fmt.Printf("%s\t%s\t%s\n", s.Arch, s.Name, s.Revision)
+	}
+	return nil
+}
+
+func (f Fetcher) snapList() ([]Snap, error) {
+	// Get the details of the snap from the API
+	u := fmt.Sprintf("%s/v1/snaps", f.URL.String())
+	resp, err := http.Get(u)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		var e ErrorResponse
+		json.NewDecoder(resp.Body).Decode(&e)
+		return nil, fmt.Errorf(e.Error)
+	}
+
+	defer resp.Body.Close()
+
+	// Decode the JSON message
+	var l ListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&l); err != nil {
+		return nil, err
+	}
+	return l.Snaps, nil
 }
 
 func (f Fetcher) snapDetails(snap string, revision int) (*SnapResponse, error) {

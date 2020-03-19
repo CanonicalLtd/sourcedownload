@@ -29,6 +29,17 @@ func main() {
 	snap, revision, url, p := parseFlags()
 
 	fetch := fetcher.NewFetcher(url, p)
+
+	if len(snap) == 0 || revision == 0 {
+		fmt.Println("List the available snaps:")
+		err := fetch.List()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if err := fetch.Run(snap, revision); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -47,14 +58,10 @@ func parseFlags() (string, int, *url2.URL, string) {
 	flag.StringVar(&snap, "snap", "", "The name of the snap to process")
 	flag.IntVar(&revision, "revision", 0, "The revision of the snap to process")
 	flag.StringVar(&url, "url", "https://sources.iotdevice.io", "The URL of the Compliance Service")
-	flag.StringVar(&pathDownload, "path", "download", "Location to store the download files")
+	flag.StringVar(&pathDownload, "path", "downloads", "Location to store the download files")
 	flag.Parse()
 
 	// Validate
-	if len(snap) == 0 || revision == 0 {
-		fmt.Println("The `-snap` and `-revision` arguments are mandatory")
-		os.Exit(1)
-	}
 	u, err := url2.Parse(url)
 	if err != nil {
 		fmt.Println("The URL of the compliance service is invalid:", err)
