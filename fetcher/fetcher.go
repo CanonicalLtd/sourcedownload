@@ -57,6 +57,11 @@ func (f Fetcher) Run(snap string, revision int) error {
 		return err
 	}
 
+	// Download the snapcraft.yaml file
+	if err := DownloadSnapcraft(f.Path, snapResp.Snap); err != nil {
+		return err
+	}
+
 	// Download the packages for the snap
 	for _, pp := range snapResp.Snap.Packages {
 		p := path.Join(f.Path, pp.BinaryName, pp.BinaryVersion)

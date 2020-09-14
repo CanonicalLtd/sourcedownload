@@ -18,10 +18,13 @@
 package fetcher
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 )
 
 // DownloadFile will download a url to a local file. It's efficient because it will
@@ -60,4 +63,26 @@ func DownloadFile(filepath string, url string) error {
 		return err
 	}
 	return nil
+}
+
+// DownloadSnapcraft download the snapcraft.yaml for the snap and revision
+func DownloadSnapcraft(filepath string, snap Snap) error {
+	if err := os.MkdirAll(filepath, os.ModePerm); err != nil {
+		return err
+	}
+
+	if snap.SnapYAML == "" {
+		fmt.Printf("snapcraft.yaml not available for %s (%s)", snap.Name, snap.Revision)
+		return nil
+	}
+
+	name := fmt.Sprintf("snapcraft_%s_%s.yaml", snap.Name, snap.Revision)
+	p := path.Join(filepath, name)
+
+	b, err := base64.StdEncoding.DecodeString(snap.SnapYAML)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(p, b, 0644)
 }
